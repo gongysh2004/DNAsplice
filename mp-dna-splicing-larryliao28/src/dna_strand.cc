@@ -36,7 +36,7 @@ void DNAstrand::SpliceIn(const char* pattern, DNAstrand& to_splice_in) {
       int size = 0;
       while (size < StrLen(pattern) &&
              trace != nullptr) {  // smaller than the size of pattern and not
-                                  // null pointer) {add pattern to free store
+                                  // null pointer) add pattern to free store
                                   // char(char*)
         *(check + size) = trace->data;
         trace = trace->next;
@@ -56,6 +56,7 @@ void DNAstrand::SpliceIn(const char* pattern, DNAstrand& to_splice_in) {
         pos = current;
       }
       delete check;
+      check = nullptr;
     }
     current = current->next;
   }
@@ -88,6 +89,8 @@ void DNAstrand::SpliceIn(const char* pattern, DNAstrand& to_splice_in) {
     delete to_splice_in.head_;
     to_splice_in.head_ = next;
   }
+  to_splice_in.head_ = nullptr;
+  to_splice_in.tail_ = nullptr;
 }
 
 int DNAstrand::StrLen(const char* c_str) {
