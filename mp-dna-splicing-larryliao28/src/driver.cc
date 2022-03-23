@@ -2,4 +2,7 @@
 
 #include "dna_strand.hpp"
 
-int main() {}
+int main() {
+  DNAstrand test{};
+  // Node add = {'a', }
+}

@@ -12,6 +12,8 @@ public:
 
   void SpliceIn(const char* pattern, DNAstrand& to_splice_in);
   int StrLen(const char* c_str);
+  bool Match(Node* pos, const char* pattern);
+  int Replace(Node* pos);
 
 private:
   Node* head_ = nullptr;
