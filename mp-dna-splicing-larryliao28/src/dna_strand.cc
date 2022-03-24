@@ -2,7 +2,6 @@
 #include "node.hpp"
 #include <stdexcept>
 #include <cassert>
-#include <iostream>
 
 DNAstrand::DNAstrand(const char* c_str) {
   const char* c = c_str;
@@ -100,7 +99,8 @@ void DNAstrand::SpliceIn(const char* pattern, DNAstrand& to_splice_in) {
   if(end_reserve==nullptr){
     tail_ = to_splice_in.tail_;
   }
-
+  to_splice_in.head_=nullptr;
+  to_splice_in.tail_=nullptr;
 }
 
 int DNAstrand::StrLen(const char* c_str) const {
