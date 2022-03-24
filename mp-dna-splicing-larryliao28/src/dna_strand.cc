@@ -1,7 +1,46 @@
 #include "dna_strand.hpp"
-
+#include "node.hpp"
 #include <stdexcept>
+#include <cassert>
+#include <iostream>
 
+DNAstrand::DNAstrand(const char* c_str) {
+  const char* c = c_str;
+  while ( *c != '\0'){
+    Node * node = new Node(*c);
+    if(head_ == nullptr){
+       head_ = node;
+       tail_ = node;
+    }else{
+      tail_->next = node;
+      tail_ = node;
+    }
+    c++;
+  }
+}
+int DNAstrand::size() const{
+  int size = 0;
+  Node * node = this->head_;
+  while(node != nullptr){
+  size ++;
+  node=node->next;
+  }
+  return size;
+}
+const char* DNAstrand::toCstr() const {
+  int size = this->size();
+  if(size==0) return nullptr;
+  char * cstr = new char[size+1];
+  char * work_ptr = cstr;
+  Node * node = this->head_;
+  while(node != nullptr){
+     *work_ptr = node->data;
+     work_ptr++;
+     node=node->next;
+  }
+  *work_ptr = '\0';
+  return cstr;
+}
 DNAstrand::~DNAstrand() {
   while (head_ != nullptr) {
     Node* next = head_->next;
@@ -10,96 +49,61 @@ DNAstrand::~DNAstrand() {
   }
 }
 
-// void DNAstrand::SpliceIn(const char* pattern, DNAstrand& to_splice_in) {
-//   if (pattern == nullptr || to_splice_in.head_ == nullptr) {
-//     return;
-//   }
-//   if (&to_splice_in == this) {
-//     return;
-//   }
-//   // step 1: find the pattern
-//   // loop through the linked list
-//   // if character matches the first node of pattern,
-//   // create another loop through the linked list,
-//   // find match: create an char array of pattern length, see if it matches
-//   with
-//   // pattern
-//   // terminates if they don't match
-//   // if mathches, store the position of the current node
-//   // if reach the end of the list without spotting the pattern(store position
-//   is
-//   // empty), throw an exception
-//   Node* current = head_;
-//   Node* pos = nullptr;
-//   while (current != nullptr) {
-//     if (current->data == *pattern) {
-//       Node* trace = current;
-//       char* check = new char[StrLen(pattern)];
-//       int size = 0;
-//       while (size < StrLen(pattern) &&
-//              trace != nullptr) {  // smaller than the size of pattern and not
-//                                   // null pointer) add pattern to free store
-//                                   // char(char*)
-//         *(check + size) = trace->data;
-//         trace = trace->next;
-//         size++;
-//       }
-//       // check if pattern matches
+void DNAstrand::SpliceIn(const char* pattern, DNAstrand& to_splice_in) {
+  if (pattern == nullptr || to_splice_in.head_ == nullptr) {
+    return;
+  }
+  int patternSize = this->StrLen(pattern);
+  if(to_splice_in.size()==0 || patternSize==0){
+    return;
+  }
+  if (&to_splice_in == this) {
+    return;
+  }
+  int pos = this->MatchTailCLosest(pattern);
+  if(pos<0){
+    throw std::runtime_error ("Not found the pattern"); 
+  }
+  Node* start_reserve = nullptr;
+  Node* end_reserve = nullptr;
+  int step = -1;
+  while(step<pos-1){
+    if(start_reserve==nullptr){
+      start_reserve= head_;
+    }else{
+    start_reserve =  start_reserve->next;
+    }
+    step++;
+  }
 
-//       bool result = true;
-//       int i = 0;
-//       while (result && i < StrLen(pattern)) {
-//         if (*(pattern + i) != *(check + i)) {
-//           result = false;
-//           break;
-//         }
-//         i++;
-//       }
-//       if (result) {
-//         pos = current;
-//       }
-//       delete check;
-//       check = nullptr;
-//     }
-//     current = current->next;
-//   }
+  end_reserve=head_;
+  int step2=0;
+  while(step2<pos+patternSize){
+    end_reserve=end_reserve->next;
+    step2 ++;
+  }
+  Node* start_delete=head_;
+  if(start_reserve!=nullptr){
+    start_delete = start_reserve->next;
+  }
+  while(start_delete!=end_reserve){
+    Node* temp = start_delete->next;
+    delete start_delete;
+    start_delete = temp;
+  }
+  if(start_reserve==nullptr){
+    head_ = to_splice_in.head_;
+  }else{
+    start_reserve->next = to_splice_in.head_;
+  }
+  to_splice_in.tail_->next = end_reserve;
+  if(end_reserve==nullptr){
+    tail_ = to_splice_in.tail_;
+  }
 
-//   // check if the position is used
-//   if (pos == nullptr) {
-//     throw std::runtime_error("no matching pattern");
-//   }
+}
 
-//   // step 2: remove and add splice
-//   // remove the strand starting from the starting position of pattern
-//   // add the to_splice_in from the starting position (make the actual
-//   // to_splice_in empty) and return the function update head and tail(if in
-//   // the first  update head, if ends in the last sequence, update tail
-//   // remove
-//   Node* to_delete = pos;
-//   // Node* startSplicePos = pos;
-//   int i = 0;
-//   while (i < StrLen(pattern)) {
-//     Node* tmp = to_delete->next;
-//     delete to_delete;
-//     to_delete = tmp;
-//   }
-//   // Node* endSplicePos = to_delete;
-//   // pos->next = to_delete;
-
-//   // // add and empty the DNA strand
-//   endSplicePos->next = pos->next;
-//   pos->next = to_splice_in.head_;
-
-//   while (to_splice_in.head_ != nullptr) {
-//     Node* next = to_splice_in.head_->next;
-//     delete to_splice_in.head_;
-//     to_splice_in.head_ = next;
-//   }
-//   to_splice_in.head_ = nullptr;
-//   to_splice_in.tail_ = nullptr;
-// }
-
-int DNAstrand::StrLen(const char* c_str) {
+int DNAstrand::StrLen(const char* c_str) const {
   int size = 0;
   while (*c_str != '\0') {
     size++;
@@ -107,100 +111,34 @@ int DNAstrand::StrLen(const char* c_str) {
   }
   return size;
 }
+ 
 
-// Node* Match() {
-//   Node* current = head_;
-//   Node* pos = nullptr;
-//   while (current != nullptr) {
-//     if (current->data == *pattern) {
-//       Node* trace = current;
-//       char* check = new char[StrLen(pattern)];
-//       int size = 0;
-//       while (size < StrLen(pattern) &&
-//              trace != nullptr) {  // smaller than the size of pattern and not
-//                                   // null pointer) add pattern to free store
-//                                   // char(char*)
-//         *(check + size) = trace->data;
-//         trace = trace->next;
-//         size++;
-//       }
-//       // check if pattern matches
-//       bool result = true;
-//       int i = 0;
-//       while (result && i < StrLen(pattern)) {
-//         if (*(pattern + i) != *(check + i)) {
-//           result = false;
-//           break;
-//         }
-//         i++;
-//       }
-//       if (result) {
-//         pos = current;
-//       }
-//       delete check;
-//       check = nullptr;
-//     }
-//     current = current->next;
-//   }
-// }
 
-void DNAstrand::SpliceIn(const char* pattern, DNAstrand& to_splice_in) {
-  if (pattern == nullptr || to_splice_in.head_ == nullptr ||
-      to_splice_in.tail_ == nullptr) {
-    return;
-  }
-  if (&to_splice_in == this) {
-    return;
-  }
-  Node* current = head_;
-  // Node* pos = nullptr;
-  Node* last_ptr = nullptr;
-  while (current != nullptr) {
-    if (current->data == *pattern) {
-      if (Match(current, pattern)) {
-        last_ptr = current;
-      }
-    }
-    current = current->next;
-  }
+int DNAstrand::MatchTailCLosest(const char* pattern) const{
+  int size = this->size();
 
-  Node* current_pos = nullptr;
-  if (last_ptr != nullptr) {
-    current_pos = last_ptr;
-  } else {
-    throw std::runtime_error("no matching pattern");
-  }
-
-  // replace
-
-  last_ptr = to_splice_in.head_;
-  Node* temp_pos = nullptr;
-  int size = 0;
-  while (size < StrLen(pattern)) {
-    temp_pos = current_pos;
-    current_pos = current_pos->next;
-    delete temp_pos;
-    to_splice_in.tail_ = current_pos;
-    size++;
-  }
-}
-
-bool DNAstrand::Match(Node* pos, const char* pattern) {
-  // if find match return the pointer to the node, if not return null)
-  Node* current_pos = pos;
-  int size = 0;
-  bool result = true;
-  while (size < StrLen(pattern)) {
-    if (current_pos == nullptr) {
-      return false;
-    }
-    if (current_pos->data == pattern[size]) {
+  int patternSize = this->StrLen(pattern);
+  int diff = size - patternSize;
+  if(diff<0) return -1;
+  // if find match return position, if not return -1)
+  const char* work_c_str = pattern;
+  Node* current_pos = head_;
+  for(int pos=diff; pos>=0; pos--){
+    work_c_str = pattern;
+    current_pos = head_;
+    int move_step = 0;
+    while(move_step<pos){
       current_pos = current_pos->next;
-    } else {
-      return false;
+      move_step ++;
     }
-    size++;
+    while (*work_c_str != '\0' && current_pos->data==*work_c_str) {
+      current_pos = current_pos->next;
+      work_c_str++;
+    }
+    if(*work_c_str=='\0'){
+      return pos;
+    }
   }
-
-  return result;
+  return -1;
 }
+
